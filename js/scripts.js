@@ -5,6 +5,22 @@ var dealerHand = [];
 var playerBlackJack = false;
 var dealerBlackJack = false;
 
+var playerWinCount = 0;
+var dealerWinCount = 0;
+
+var testBlackJackCards = [{
+  "value": 10,
+  "file": "10_of_clubs.png"
+}, {
+  "value": 1,
+  "file": "ace_of_clubs.png"
+}];
+var testAceCard = {
+  "value": 1,
+  "file": "ace_of_clubs.png"
+};
+
+
 $(document).ready(function() {
 
   createDeck();
@@ -45,69 +61,106 @@ function deal() {
   resetGameBoard();
 
   shuffleDeck();
+  //--testing for Black Jack on the deal
+  //playerHand = [testBlackJackCards[0], testBlackJackCards[1]];
+  //---------------
 
   playerHand = [cardDeck[0], cardDeck[1]];
+
+  //--testing for Black Jack on the deal
+  //dealerHand = [testBlackJackCards[0], testBlackJackCards[1]];
+  //--------------
+
   dealerHand = [cardDeck[2], cardDeck[3]];
 
   placeInDeck = 4; //keep track of how many cards dealt
 
-  placeCardOnBoard(playerHand[0], 'player', 'one');
-  //placeCardOnBoard(dealerHand[0], 'dealer', 'one');
+  placeCardOnBoard(playerHand[0], 'player', 'one', 500);
+  placeCardOnBoard(playerHand[1], 'player', 'two', 1100);
 
-  placeCardOnBoard(playerHand[1], 'player', 'two');
-  //placeCardOnBoard(dealerHand[1], 'dealer', 'two');
+  setTimeout(function() {
+    calcHandTotal(playerHand, 'player');
 
-  calcHandTotal(playerHand, 'player');
-  //calcHandTotal(dealerHand, 'dealer');
-
-  checkBlackJack(playerHand);
+    var blackJack = checkBlackJack(playerHand);
+    if (blackJack) {
+      showDealerCards();
+      blackjack = checkBlackJack(dealerHand);
+      if (blackjack) { //call messageWinner with Who and Why
+        messageWinner('push', 'blackjack');
+      } else {
+        messageWinner('player', 'blackjack');
+      }
+      gameOver();
+    }
+  }, 1600);
 
 }
 
 function hit() {
-  var slot = "";
 
+  var slot = "";
   slot = nextSlot(playerHand.length);
-  placeCardOnBoard(cardDeck[placeInDeck], 'player', slot);
+  placeCardOnBoard(cardDeck[placeInDeck], 'player', slot, 500);
+  //playerHand.push(testAceCard); //testing ... testing... testing
   playerHand.push(cardDeck[placeInDeck]);
   placeInDeck++;
-  total = calcHandTotal(playerHand, 'player');
-  if (total.hardTotal > 21) {
-    bust('player');
-  }
+
+  setTimeout(function() {
+    total = calcHandTotal(playerHand, 'player');
+    if (total.hardTotal > 21) {
+      // bust('player');
+      messageWinner('player', 'bust');
+      gameOver();
+    }
+  }, 700);
+
 }
 
 function stand() {
   //now it's dealer's turn
   showDealerCards();
 
-  var dealerBlackJack = checkBlackJack();
-  
-  calcHandTotal(dealerHand, 'dealer');
-  $('#hit-button').prop('disabled', true);
-  $('#stand-button').prop('disabled', true);
-  var slot;
-  dealerTotal = calcHandTotal(dealerHand, 'dealer');
-  while (dealerTotal.hardTotal < 17 &&
-    dealerTotal.softTotal < 17 &&
-    dealerHand.length < 7) {
+  setTimeout(function() {
+    var blackJack = checkBlackJack(dealerHand);
+    if (blackJack) {
+      messageWinner('dealer', 'blackjack');
+      gameOver();
+      return;
+    }
+  }, 1500);
 
-    slot = nextSlot(dealerHand.length);
-    placeCardOnBoard(cardDeck[placeInDeck], 'dealer', slot);
-    dealerHand.push(cardDeck[placeInDeck]);
-
-    placeInDeck++;
+  setTimeout(function() {
+    var slot;
     dealerTotal = calcHandTotal(dealerHand, 'dealer');
+    while (dealerTotal.hardTotal < 17 &&
+      dealerTotal.softTotal < 17 &&
+      dealerHand.length < 7) {
 
-  }
-  //we now know dealer has at least 17, check winner
-  if (dealerTotal.hardTotal > 21) {
-    bust('dealer');
-  } else {
-    checkWinner();
-  }
+      slot = nextSlot(dealerHand.length);
+      placeCardOnBoard(cardDeck[placeInDeck], 'dealer', slot, 0);
+      dealerHand.push(cardDeck[placeInDeck]);
 
+      placeInDeck++;
+
+      dealerTotal = calcHandTotal(dealerHand, 'dealer');
+
+    }
+    //we now know dealer has at least 17, check winner
+    if (dealerTotal.hardTotal > 21) {
+      messageWinner('dealer', 'bust');
+      // bust('dealer');
+    } else {
+      var winner = checkWinner();
+      messageWinner(winner, 'straight');
+    }
+
+    gameOver();
+  }, 1600);
 }
+
+// function dummyDelay() {
+//   setTimeout(function ()
+// }
 
 function nextSlot(currentTotalCards) {
   var slot = "";
@@ -135,47 +188,76 @@ function greaterOf(v1, v2) {
 function checkWinner() {
   var playerHas = calcHandTotal(playerHand);
   var dealerHas = calcHandTotal(dealerHand);
+  var winner = '';
 
-  // if (dealerHas.hardTotal > 21) {
-  //   $('#message').html("Dealer Bust");
-  // } else 
+  var playerTotal = greaterOf(playerHas.hardTotal, playerHas.softTotal);
+  var dealerTotal = greaterOf(dealerHas.hardTotal, dealerHas.softTotal);
 
-  if (playerHas.hardTotal > greaterOf(dealerHas.hardTotal, dealerTotal.softTotal) ||
-    playerHas.softTotal > greaterOf(dealerHas.hardTotal, dealerTotal.softTotal)) {
-    $('#message').html("You beat the Dealer");
-  } else if (playerHas.hardTotal < greaterOf(dealerHas.hardTotal, dealerTotal.softTotal) ||
-    playerHas.softTotal < greaterOf(dealerHas.hardTotal, dealerTotal.softTotal)) {
-    $('#message').html("The Dealer beat you");
+  if (playerTotal > dealerTotal) {
+    winner = 'player';
+  } else if (playerTotal < dealerTotal) {
+    winner = 'dealer';
+    //$('#message').html("The Dealer beat you");
   } else {
-    $('#message').html("PUSH");
+    winner = 'push';
+    // $('#message').html("PUSH");
   }
-
+  return winner;
 }
 
-function placeCardOnBoard(card, who, slot) {
-  var currId = '#' + who + '-card-' + slot;
-  var cardImage = '<img src="img/PNG-cards-1.3/' + card.file + '">';
+function placeCardOnBoard(card, who, slot, delay) {
+  setTimeout(function() {
+    var currId = '#' + who + '-card-' + slot;
+    var cardImage = '<img src="img/PNG-cards-1.3/' + card.file + '">';
 
-  $(currId).removeClass('empty');
-  $(currId).html(cardImage);
+    $(currId).removeClass('empty');
+    $(currId).html(cardImage);
+  }, delay);
+
 }
 
 //todo:  call this when there is a blackjack or when player clicks Stand button
 function showDealerCards() {
-  placeCardOnBoard(dealerHand[0], 'dealer', 'one');
-  placeCardOnBoard(dealerHand[1], 'dealer', 'two');
-  calcHandTotal(dealerHand, 'dealer');
+  placeCardOnBoard(dealerHand[0], 'dealer', 'one', 400);
+  placeCardOnBoard(dealerHand[1], 'dealer', 'two', 900);
+  setTimeout(function() {
+    calcHandTotal(dealerHand, 'dealer');
+  }, 1310);
 }
 
-function messageBlackJack(who) {
-  if (who == 'player') {
-     $('#message').html("Player wins with Black Jack!");
-   } else if (who == 'dealer') {
-     $('#message').html("Dealer wins with Black Jack!");
-   } else if (who == 'both') {
-     $('#message').html("... PUSH ...");
-   }
+function messageWinner(who, why) {
+  if (why.toUpperCase() === 'BLACKJACK') {
+    if (who == 'player') {
+      $('#message').html("Player wins with Black Jack!");
+    } else if (who == 'dealer') {
+      $('#message').html("Dealer wins with Black Jack!");
+    } else {
+      $('#message').html("PUSH! Dealer and Player hit Black Jack");
+    }
+  } else if (why.toUpperCase() === 'BUST') {
+    if (who == 'player') {
+      $('#message').html("Player BUST!");
+    } else if (who == 'dealer') {
+      $('#message').html("Dealer BUST!");
+    }
+  } else { //Straight Win
+    if (who == 'player') {
+      $('#message').html("You beat the Dealer!");
+    } else
+      $('#message').html("The Dealer beat you");
+  }
 }
+
+// function messageBlackJack(who) {
+//   if (who == 'player') {
+//     $('#message').html("Player wins with Black Jack!");
+//   } else if (who == 'dealer') {
+//     $('#message').html("Dealer wins with Black Jack!");
+//   } else {
+//     $('#message').html("PUSH! Dealer and Player hit Black Jack");
+//   }
+// }
+
 function checkBlackJack(hand) {
   var handTotal = calcHandTotal(hand);
   var gotBlackJack = false;
@@ -183,27 +265,6 @@ function checkBlackJack(hand) {
     gotBlackJack = true;
   }
   return gotBlackJack;
-
-  // var player = calcHandTotal(playerHand);
-  // var dealer = calcHandTotal(dealerHand);
-  // var gotBlackJack = true;
-  // if (player.softTotal === 21 && dealer.softTotal === 21) {
-  //   $('#message').html("PUSH");
-  // } else if (player.softTotal === 21) {
-  //   $('#message').html("Player wins with Black Jack!");
-  // } else if (dealer.softTotal === 21) {
-  //   $('#message').html("Dealer wins with Black Jack!");
-  // } else {
-  //   gotBlackJack = false;
-  // }
-
-  // return gotBlackJack;
-
- // if (gotBlackJack) {
-  //   $('#hit-button').prop('disabled', true);
-  //   $('#stand-button').prop('disabled', true);
-  //   showDealerCards();
- // }
 }
 
 function calcHandTotal(realHand, who) {
@@ -219,16 +280,21 @@ function calcHandTotal(realHand, who) {
   }
   aceTotal = total;
   if (aceCnt > 0) {
-    if (aceCnt > 1) {aceCnt = 1;}
-    aceTotal = total + (10 * aceCnt);
+    if (aceCnt > 1) {
+      aceCnt = 1;
+    }
+    var temp = total + (10 * aceCnt);
+    if (temp > 21) { //Ace will only add 1 point .. don't bust
+      aceTotal = total;
+    } else {
+      aceTotal = total + (10 * aceCnt);
+    }
   }
 
   var idToGet = '.' + who + '-total';
   //set dealer-total or player-total
   if (total === aceTotal) {
     $(idToGet).html(total);
-  } else if (aceTotal > 21) { //Got two aces ..
-    
   } else {
     $(idToGet).html(total + ' or ' + aceTotal);
   }
@@ -243,16 +309,22 @@ function calcHandTotal(realHand, who) {
   };
 }
 
-function bust(who) {
-  if (who === 'player') {
-    $('#message').html("Player BUST!");
-    $('#hit-button').prop('disabled', true);
-    $('#stand-button').prop('disabled', true);
-  } else {
-    $('#message').html("Dealer BUST!");
+// function bust(who) {
+//   if (who === 'player') {
+//     $('#message').html("Player BUST!");
+//     gameOver('dealer');
+//     // $('#hit-button').prop('disabled', true);
+//     // $('#stand-button').prop('disabled', true);
+//   } else {
+//     $('#message').html("Dealer BUST!");
 
-  }
-  
+//   }
+
+// }
+
+function gameOver(winner) {
+  $('#hit-button').prop('disabled', true);
+  $('#stand-button').prop('disabled', true);
 }
 
 function createDeck() {
@@ -299,6 +371,7 @@ function createDeck() {
       });
     }
   }
+
 
 
 }
