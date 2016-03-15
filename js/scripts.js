@@ -229,23 +229,38 @@ function messageWinner(who, why) {
   if (why.toUpperCase() === 'BLACKJACK') {
     if (who == 'player') {
       $('#message').html("Player wins with Black Jack!");
+      playerWinCount++;
     } else if (who == 'dealer') {
       $('#message').html("Dealer wins with Black Jack!");
+      dealerWinCount++;
     } else {
       $('#message').html("PUSH! Dealer and Player hit Black Jack");
     }
   } else if (why.toUpperCase() === 'BUST') {
     if (who == 'player') {
       $('#message').html("Player BUST!");
+       dealerWinCount++;
     } else if (who == 'dealer') {
       $('#message').html("Dealer BUST!");
+       playerWinCount++;
     }
-  } else { //Straight Win
+  } else 
+  { //Straight Win
     if (who == 'player') {
       $('#message').html("You beat the Dealer!");
-    } else
+       playerWinCount++;
+    } else {
       $('#message').html("The Dealer beat you");
+      dealerWinCount++;
+    }
   }
+
+  //Update win count
+  
+
+    $('.dealer-wins').html(dealerWinCount);
+  $('.player-wins').html(playerWinCount);
+
 }
 
 // function messageBlackJack(who) {

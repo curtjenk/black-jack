@@ -37,12 +37,15 @@
 
 .dealer-total-wrapper, .player-total-wrapper {
 	color: white;
-	font-size: 18px;
+	font-size: 16px;
 
 }
 
-.dealer-total-wrapper span, .player-total-wrapper span {
-	display: block;
+
+.dealer-total-wrapper span, 
+.player-total-wrapper span
+{
+	/*display: block;*/
 	text-align: center;
 }
 
